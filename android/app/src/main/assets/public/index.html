@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self' capacitor://localhost https: data: blob:;
+             script-src 'self' 'unsafe-inline' capacitor://localhost;
+             style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+             font-src 'self' https://fonts.gstatic.com;
+             img-src 'self' data: https: capacitor://localhost;
+             connect-src 'self' https: wss: capacitor://localhost;" />
+  <title>TechHelp Browser</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Android-spezifische Anpassungen -->
+  <style>
+    /* Status-Bar-Bereich (Android Notch/Cutout) */
+    :root {
+      --status-bar-height: env(safe-area-inset-top, 24px);
+      --nav-bar-height:    env(safe-area-inset-bottom, 0px);
+    }
+    body {
+      padding-top:    var(--status-bar-height);
+      padding-bottom: var(--nav-bar-height);
+    }
+    /* Titlebar auf Android ausblenden (nutzt native Statusleiste) */
+    .titlebar {
+      display: none !important;
+    }
+    /* Toolbar oben anheften */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    /* Content-Area volle Höhe */
+    .content-area {
+      height: calc(100vh - var(--status-bar-height) - var(--nav-bar-height) - 48px);
+    }
+    /* Touch-Optimierungen */
+    .nav-btn, .btn-new-tab, .tab, .wc-btn {
+      min-height: 44px;
+      min-width:  44px;
+    }
+    /* Panels auf Mobile: volle Breite */
+    .panel {
+      width: 100% !important;
+      top: 48px !important;
+    }
+  </style>
+</head>
+<body class="android-app">
+
+<!-- Toolbar (ohne Titlebar auf Android) -->
+<div class="toolbar" role="toolbar" aria-label="Browser-Toolbar">
+  <div class="nav-btns">
+    <button class="nav-btn" id="btn-back"    aria-label="Zurück"     title="Zurück"    disabled>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>
+    </button>
+    <button class="nav-btn" id="btn-forward" aria-label="Vor"        title="Vor"       disabled>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+    </button>
+    <button class="nav-btn" id="btn-reload"  aria-label="Neu laden"  title="Neu laden">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8A5.5 5.5 0 1 1 8 2.5"/><polyline points="13.5 2.5 13.5 6 10 6"/></svg>
+    </button>
+    <button class="nav-btn" id="btn-home"    aria-label="Startseite" title="Startseite">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6.5L8 2l6 4.5V14H2z"/><rect x="5.5" y="9" width="5" height="5"/></svg>
+    </button>
+  </div>
+
+  <div class="addressbar-wrap" id="addressbar-wrap">
+    <div class="security-icon" id="security-icon" aria-hidden="true">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 2L3 4.5V8c0 3 2.5 5 5 6 2.5-1 5-3 5-6V4.5L8 2z"/></svg>
+    </div>
+    <input class="addressbar" id="addressbar" type="text"
+      placeholder="Adresse eingeben oder suchen…"
+      autocomplete="off" autocorrect="off" autocapitalize="none"
+      spellcheck="false" inputmode="url"
+      aria-label="Adressleiste" />
+    <button class="addressbar-clear" id="addressbar-clear" aria-label="Adresse löschen" tabindex="-1">✕</button>
+  </div>
+
+  <div class="toolbar-actions">
+    <button class="nav-btn" id="btn-bookmark"  aria-label="Lesezeichen">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2h10v13l-5-3-5 3V2z"/></svg>
+    </button>
+    <button class="nav-btn" id="btn-menu" aria-label="Menü" aria-haspopup="true" aria-expanded="false">
+      <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="3" r="1.2"/><circle cx="8" cy="8" r="1.2"/><circle cx="8" cy="13" r="1.2"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Tab-Leiste (horizontal scrollbar auf Android) -->
+<div class="tab-bar-wrap" style="overflow-x:auto;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;">
+  <div class="tab-bar" id="tab-bar" role="tablist" aria-label="Browser-Tabs" style="min-width:max-content;display:flex;"></div>
+  <button class="btn-new-tab" id="btn-new-tab" aria-label="Neuen Tab öffnen" style="flex-shrink:0">+</button>
+</div>
+
+<!-- Dummy-Titlebar (wird per CSS ausgeblendet, aber JS braucht die IDs) -->
+<div class="titlebar" id="titlebar" aria-hidden="true" style="display:none">
+  <div class="logo-icon"></div>
+  <div class="window-controls">
+    <button id="wc-min"></button>
+    <button id="wc-max"></button>
+    <button id="wc-close"></button>
+  </div>
+</div>
+
+<!-- Content Area -->
+<div class="content-area" id="content-area">
+  <div class="newtab-page" id="newtab-page" role="main">
+    <div class="newtab-glow" aria-hidden="true"></div>
+    <div class="newtab-header">
+      <div class="newtab-logo">
+        <div class="newtab-logo-icon" aria-hidden="true">⚡</div>
+        <h1 class="newtab-title">TechHelp Browser</h1>
+      </div>
+      <p class="newtab-greeting" id="newtab-greeting">Guten Tag!</p>
+    </div>
+    <div class="newtab-search-wrap">
+      <div class="newtab-search">
+        <svg class="search-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l2.5 2.5"/></svg>
+        <input class="newtab-search-input" id="newtab-search-input" type="text"
+          placeholder="Suchen oder URL eingeben…"
+          autocomplete="off" autocorrect="off" spellcheck="false"
+          inputmode="search" aria-label="Suche oder URL" />
+        <div class="search-engine-badge" id="search-engine-badge">G</div>
+      </div>
+    </div>
+    <div class="newtab-shortcuts" id="newtab-shortcuts" aria-label="Schnell-Zugriff"></div>
+    <section class="newtab-recent" aria-label="Zuletzt besucht">
+      <h2 class="newtab-section-title">Zuletzt besucht</h2>
+      <div class="recent-grid" id="recent-grid"></div>
+    </section>
+  </div>
+
+  <div class="webview-container" id="webview-container">
+    <!-- Auf Android: iframe statt webview -->
+  </div>
+
+  <div class="loading-bar" id="loading-bar" role="progressbar" aria-label="Seite lädt">
+    <div class="loading-bar-inner" id="loading-bar-inner"></div>
+  </div>
+</div>
+
+<!-- Panels -->
+<aside class="panel" id="panel-bookmarks" role="dialog" aria-label="Lesezeichen" aria-hidden="true">
+  <div class="panel-header">
+    <h2 class="panel-title">Lesezeichen</h2>
+    <button class="panel-close" data-panel="bookmarks" aria-label="Schließen">✕</button>
+  </div>
+  <div class="panel-body" id="bookmarks-list"></div>
+</aside>
+
+<aside class="panel panel--menu" id="panel-menu" role="dialog" aria-label="Menü" aria-hidden="true">
+  <div class="panel-header">
+    <h2 class="panel-title">Menü</h2>
+    <button class="panel-close" data-panel="menu" aria-label="Schließen">✕</button>
+  </div>
+  <nav class="menu-nav">
+    <button class="menu-item" id="menu-newtab"><span class="menu-icon">＋</span> Neuer Tab</button>
+    <button class="menu-item" id="menu-history"><span class="menu-icon">🕐</span> Verlauf</button>
+    <button class="menu-item" id="menu-bookmarks"><span class="menu-icon">🔖</span> Lesezeichen</button>
+    <button class="menu-item" id="menu-downloads"><span class="menu-icon">⬇</span> Downloads</button>
+    <hr class="menu-divider" />
+    <button class="menu-item" id="menu-zoomin"><span class="menu-icon">🔍</span> Zoom +</button>
+    <button class="menu-item" id="menu-zoomout"><span class="menu-icon">🔎</span> Zoom –</button>
+    <button class="menu-item" id="menu-zoomreset"><span class="menu-icon">⊙</span> Zoom zurücksetzen</button>
+    <hr class="menu-divider" />
+    <button class="menu-item" id="menu-settings"><span class="menu-icon">⚙</span> Einstellungen</button>
+    <hr class="menu-divider" />
+    <div class="menu-version" id="menu-version">TechHelp Browser v1.0.0</div>
+  </nav>
+</aside>
+
+<aside class="panel panel--wide" id="panel-history" role="dialog" aria-label="Verlauf" aria-hidden="true">
+  <div class="panel-header">
+    <h2 class="panel-title">Verlauf</h2>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn-text btn-danger" id="history-clear-btn">Löschen</button>
+      <button class="panel-close" data-panel="history" aria-label="Schließen">✕</button>
+    </div>
+  </div>
+  <div class="panel-search">
+    <input type="text" id="history-search" placeholder="Verlauf durchsuchen…" aria-label="Verlauf suchen" />
+  </div>
+  <div class="panel-body" id="history-list"></div>
+</aside>
+
+<aside class="panel panel--wide" id="panel-downloads" role="dialog" aria-label="Downloads" aria-hidden="true">
+  <div class="panel-header">
+    <h2 class="panel-title">Downloads</h2>
+    <button class="panel-close" data-panel="downloads" aria-label="Schließen">✕</button>
+  </div>
+  <div class="panel-body" id="downloads-list"><p class="panel-empty">Keine Downloads</p></div>
+</aside>
+
+<aside class="panel panel--wide" id="panel-settings" role="dialog" aria-label="Einstellungen" aria-hidden="true">
+  <div class="panel-header">
+    <h2 class="panel-title">Einstellungen</h2>
+    <button class="panel-close" data-panel="settings" aria-label="Schließen">✕</button>
+  </div>
+  <div class="panel-body settings-body">
+    <div class="settings-group">
+      <h3 class="settings-group-title">Allgemein</h3>
+      <label class="settings-row">
+        <span class="settings-label">Startseite</span>
+        <input type="url" class="settings-input" id="setting-homepage" placeholder="https://techhelp-support.de" />
+      </label>
+      <label class="settings-row">
+        <span class="settings-label">Suchmaschine</span>
+        <select class="settings-select" id="setting-search-engine">
+          <option value="google">Google</option>
+          <option value="bing">Bing</option>
+          <option value="duckduckgo">DuckDuckGo</option>
+          <option value="ecosia">Ecosia</option>
+          <option value="brave">Brave Search</option>
+        </select>
+      </label>
+    </div>
+    <div class="settings-group">
+      <h3 class="settings-group-title">Datenschutz</h3>
+      <label class="settings-row">
+        <span class="settings-label">Werbeblocker</span>
+        <div class="toggle-wrap">
+          <input type="checkbox" class="toggle-input" id="setting-adblock" role="switch" />
+          <div class="toggle-track" aria-hidden="true"></div>
+        </div>
+      </label>
+      <button class="btn-text btn-danger" id="setting-clear-history">Verlauf löschen</button>
+      <button class="btn-text btn-danger" id="setting-clear-cookies">Cookies löschen</button>
+    </div>
+    <div class="settings-group">
+      <h3 class="settings-group-title">Über</h3>
+      <p class="settings-info">Version: <span id="settings-version">1.0.0</span></p>
+      <p class="settings-info">TechHelp Support Team</p>
+      <a class="btn-text" href="#" id="settings-website-link">techhelp-support.de</a>
+    </div>
+  </div>
+</aside>
+
+<div class="panel-backdrop" id="panel-backdrop" aria-hidden="true"></div>
+<nav class="context-menu" id="context-menu" role="menu" aria-hidden="true">
+  <button class="context-item" id="ctx-back"     role="menuitem">◀ Zurück</button>
+  <button class="context-item" id="ctx-forward"  role="menuitem">▶ Vor</button>
+  <button class="context-item" id="ctx-reload"   role="menuitem">↺ Neu laden</button>
+  <hr class="context-divider" />
+  <button class="context-item" id="ctx-bookmark" role="menuitem">🔖 Lesezeichen</button>
+  <button class="context-item" id="ctx-newtab"   role="menuitem">＋ Neuer Tab</button>
+  <hr class="context-divider" />
+  <button class="context-item" id="ctx-devtools" role="menuitem">🛠 Entwicklertools</button>
+</nav>
+
+<!-- Capacitor Bridge + App-Logik -->
+<script src="capacitor.js"></script>
+<script src="android-bridge.js"></script>
+<script src="browser.js"></script>
+</body>
+</html>
