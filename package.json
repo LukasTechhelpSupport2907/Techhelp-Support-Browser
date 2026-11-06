@@ -1,0 +1,70 @@
+{
+  "name": "techhelp-browser",
+  "version": "1.0.0",
+  "description": "Techhelp Support Browser – Der offizielle Browser von Techhelp Support",
+  "main": "src/main/main.js",
+  "author": "Techhelp Support Team",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --win --mac --linux",
+    "cap:sync": "npx cap sync",
+    "cap:android": "npx cap open android",
+    "build:apk": "npm run cap:sync && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "electron-store": "^8.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
+    "sharp": "^0.35.5"
+  },
+  "build": {
+    "appId": "de.techhelp-support.browser",
+    "productName": "Techhelp Support Browser",
+    "copyright": "Copyright © 2026 Techhelp Support",
+    "icon": "assets/icons/icon",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icons/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icons/icon.icns",
+      "category": "public.app-category.utilities"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "assets/icons/icon.png",
+      "category": "Network"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Techhelp Support Browser"
+    }
+  }
+}

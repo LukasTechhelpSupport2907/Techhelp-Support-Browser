@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <!-- Hintergrund: fast schwarz mit leichtem Warmton -->
+    <radialGradient id="bgGrad" cx="50%" cy="45%" r="60%">
+      <stop offset="0%"   stop-color="#1a1010"/>
+      <stop offset="100%" stop-color="#0a0808"/>
+    </radialGradient>
+
+    <!-- Blitz-Gradient: hell-rot in Mitte, dunkler nach außen -->
+    <linearGradient id="boltGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%"   stop-color="#ff8080"/>
+      <stop offset="45%"  stop-color="#ff5555"/>
+      <stop offset="100%" stop-color="#c03030"/>
+    </linearGradient>
+
+    <!-- Glow-Filter für den Blitz -->
+    <filter id="boltGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Weicher Glow für Ringe -->
+    <filter id="ringGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Abgerundeter Hintergrund -->
+  <rect width="256" height="256" rx="48" fill="url(#bgGrad)"/>
+
+  <!-- Äußerster Ring (ganz schwach) -->
+  <circle cx="128" cy="128" r="118" fill="none"
+          stroke="#6b2020" stroke-width="1" opacity="0.35"/>
+
+  <!-- Ring 1 (äußerer sichtbarer Ring) -->
+  <circle cx="128" cy="128" r="104" fill="none"
+          stroke="#8b3030" stroke-width="1.5" opacity="0.5"
+          filter="url(#ringGlow)"/>
+
+  <!-- Ring 2 (mittlerer Ring) -->
+  <circle cx="128" cy="128" r="88" fill="none"
+          stroke="#aa3535" stroke-width="2" opacity="0.65"
+          filter="url(#ringGlow)"/>
+
+  <!-- Ring 3 (innerer Ring, direkt um den Blitz) -->
+  <circle cx="128" cy="128" r="70" fill="none"
+          stroke="#c04040" stroke-width="2.5" opacity="0.8"
+          filter="url(#ringGlow)"/>
+
+  <!-- Glow-Halo hinter dem Blitz -->
+  <circle cx="128" cy="128" r="52" fill="#ff2020" opacity="0.06"/>
+  <circle cx="128" cy="128" r="42" fill="#ff2020" opacity="0.08"/>
+
+  <!-- Blitz-Form (genau wie im Logo: breiter oberer Teil, schmale Spitze) -->
+  <path d="
+    M 148 44
+    L 96  130
+    L 122 130
+    L 105 212
+    L 162 118
+    L 136 118
+    Z"
+    fill="url(#boltGrad)"
+    filter="url(#boltGlow)"
+  />
+
+  <!-- Highlight oben links auf dem Blitz für 3D-Effekt -->
+  <path d="
+    M 148 44
+    L 96  130
+    L 108 130
+    L 148 64
+    Z"
+    fill="#ffaaaa"
+    opacity="0.25"
+  />
+
+</svg>
