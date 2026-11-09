@@ -1,0 +1,96 @@
+{
+  "name": "techhelp-browser",
+  "version": "1.0.3",
+  "description": "TechHelp Browser – Der Browser von TechHelp Support",
+  "main": "src/main/main.js",
+  "author": {
+    "name": "TechHelp Support Team",
+    "email": "support@techhelp-support.de"
+  },
+  "license": "PROPRIETARY",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LukasTechhelpSupport2907/Techhelp-Support-Browser.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --win --mac --linux"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/browser": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "electron-store": "^8.2.0",
+    "electron-log": "^5.0.1",
+    "electron-updater": "^6.1.7"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "de.techhelp-support.browser",
+    "productName": "TechHelp Browser",
+    "copyright": "Copyright © 2026 TechHelp Support",
+    "files": [
+      "src/**/*",
+      "www/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "LukasTechhelpSupport2907",
+      "repo": "Techhelp-Support-Browser"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icons/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icons/icon.icns",
+      "category": "public.app-category.utilities",
+      "type": "distribution"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "assets/icons/icon.png",
+      "category": "Network"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "perMachine": true,
+      "runAfterFinish": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "TechHelp Browser",
+      "installerIcon": "assets/icons/icon.ico",
+      "uninstallerIcon": "assets/icons/icon.ico",
+      "license": "LICENSE"
+    }
+  },
+  "allowScripts": {
+    "electron@33.0.0": true
+  }
+}
