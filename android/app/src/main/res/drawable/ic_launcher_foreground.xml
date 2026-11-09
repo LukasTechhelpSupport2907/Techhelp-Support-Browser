@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TechHelp Browser App-Icon Vordergrund (Blitz) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Blitz-Pfad, zentriert im 108dp-Grid (Adaptiv-Icon safe zone = 72dp) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M62,18 L38,54 H52 L42,90 L70,48 H56 Z" />
+
+</vector>

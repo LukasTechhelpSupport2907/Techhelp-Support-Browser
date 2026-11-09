@@ -1,0 +1,304 @@
+name: TechHelp Browser — Build & Release
+# Läuft im Repo: Techhelp-Support-Browser
+# Automatisch per sync-repos.yml vom Haupt-Repo hierher gespiegelt.
+#
+# Benötigte Secrets:
+#   BROWSER_SRC_TOKEN      → GitHub PAT (repo-Scope) für Release-Upload
+#   BROWSER_WEBSEITE_TOKEN → GitHub PAT für Webseiten-Repo push
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (z.B. v1.0.0) — leer = nur bauen ohne Release"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  build-windows:
+    name: "Build Windows (.exe)"
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Git-Sicherheit setzen
+        shell: bash
+        run: git config --global --add safe.directory "*"
+      - name: Abhängigkeiten installieren
+        run: npm install
+      - name: Windows .exe bauen
+        env:
+          GH_TOKEN: ${{ secrets.BROWSER_SRC_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder --win --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: dist/*.exe
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────
+  build-macos:
+    name: "Build macOS (.dmg)"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Git-Sicherheit setzen
+        shell: bash
+        run: git config --global --add safe.directory "*"
+      - name: Abhängigkeiten installieren
+        run: npm install
+      - name: macOS DMG bauen
+        env:
+          GH_TOKEN: ${{ secrets.BROWSER_SRC_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx electron-builder --mac --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: dist/*.dmg
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────
+  build-linux:
+    name: "Build Linux (.AppImage + .deb)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Git-Sicherheit setzen
+        shell: bash
+        run: git config --global --add safe.directory "*"
+      - name: System-Pakete installieren
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends rpm fakeroot dpkg
+      - name: Abhängigkeiten installieren
+        run: npm install
+      - name: Linux-Pakete bauen
+        env:
+          GH_TOKEN: ${{ secrets.BROWSER_SRC_TOKEN }}
+        run: npx electron-builder --linux --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: |
+            dist/*.AppImage
+            dist/*.deb
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────
+  build-android:
+    name: "Build Android (.apk)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+      - name: Android SDK einrichten
+        run: |
+          export ANDROID_SDK_ROOT="$HOME/android-sdk"
+          mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdtools.zip
+          unzip -q /tmp/cmdtools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
+          mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+          export PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager --licenses > /dev/null 2>&1
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+      - name: Abhängigkeiten installieren
+        run: npm install
+      - name: Capacitor Android-Projekt initialisieren
+        run: |
+          export ANDROID_SDK_ROOT="$HOME/android-sdk"
+          export ANDROID_HOME="$HOME/android-sdk"
+          if [ ! -f android/gradlew ]; then
+            npx cap add android
+          fi
+      - name: Capacitor sync
+        run: |
+          export ANDROID_SDK_ROOT="$HOME/android-sdk"
+          export ANDROID_HOME="$HOME/android-sdk"
+          npx cap sync android
+      - name: Prüfen ob gradlew vorhanden
+        run: |
+          if [ ! -f android/gradlew ]; then
+            echo "FEHLER: android/gradlew fehlt!"
+            ls -la android/ || true
+            exit 1
+          fi
+      - name: local.properties schreiben
+        working-directory: android
+        run: echo "sdk.dir=$HOME/android-sdk" > local.properties
+      - name: APK bauen
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon -q
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────
+  create-release:
+    name: "GitHub Release erstellen"
+    runs-on: ubuntu-latest
+    needs: [build-windows, build-macos, build-linux, build-android]
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.version != '')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag-Name bestimmen
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/download-artifact@v4
+        with: { name: windows-installer, path: release-files/ }
+      - uses: actions/download-artifact@v4
+        with: { name: macos-dmg, path: release-files/ }
+      - uses: actions/download-artifact@v4
+        with: { name: linux-packages, path: release-files/ }
+      - uses: actions/download-artifact@v4
+        with: { name: android-apk, path: release-files/ }
+
+      - name: Release-Dateien auflisten
+        run: find release-files -type f | sort
+
+      - name: GitHub Release & Upload
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.BROWSER_SRC_TOKEN }}
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: "TechHelp Support Browser ${{ steps.tag.outputs.name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## ⚡ TechHelp Support Browser ${{ steps.tag.outputs.name }}
+
+            Installierbarer Desktop-Browser von TechHelp Support.
+
+            | Plattform | Datei |
+            |-----------|-------|
+            | 🪟 Windows | `TechHelp-Browser-Setup-*.exe` |
+            | 📱 Android | `app-debug.apk` |
+            | 🐧 Linux | `TechHelp-Browser-*.AppImage` / `*.deb` |
+            | 🍎 macOS | `TechHelp-Browser-*.dmg` |
+
+            **Windows:** SmartScreen → „Weitere Informationen" → „Trotzdem ausführen"
+            **Linux:** `chmod +x *.AppImage && ./*.AppImage`
+
+            📖 [browser.techhelp-support.de](https://browser.techhelp-support.de) · 💬 [Discord](https://discord.gg/kDAPDXdC7q)
+          files: release-files/**/*
+
+  # ──────────────────────────────────────────────────────────
+  deploy-webseite:
+    name: "Webseite + Downloads → Webseiten-Repo"
+    runs-on: ubuntu-latest
+    needs: [build-windows, build-macos, build-linux, build-android]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: LukasTechhelpSupport2907/Techhelp-Support-Webseite-u.-Bot
+          token: ${{ secrets.BROWSER_WEBSEITE_TOKEN }}
+          path: main-repo
+
+      - name: Tag-Name bestimmen
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - uses: actions/download-artifact@v4
+        with: { name: windows-installer, path: artifacts/ }
+      - uses: actions/download-artifact@v4
+        with: { name: macos-dmg, path: artifacts/ }
+      - uses: actions/download-artifact@v4
+        with: { name: linux-packages, path: artifacts/ }
+      - uses: actions/download-artifact@v4
+        with: { name: android-apk, path: artifacts/ }
+
+      - name: Webseiten-Repo zusammenbauen und pushen
+        env:
+          TOKEN: ${{ secrets.BROWSER_WEBSEITE_TOKEN }}
+        run: |
+          TMPDIR=$(mktemp -d)
+
+          # Webseiten-Dateien kopieren
+          cp -r main-repo/Webseite/browser.techhelp-support.de/. "$TMPDIR/"
+
+          # version.json mit GitHub Release Download-URLs schreiben
+          VERSION="${{ steps.tag.outputs.name }}"
+          if [ -z "$VERSION" ]; then VERSION="dev"; fi
+
+          BASE="https://github.com/LukasTechhelpSupport2907/Techhelp-Support-Browser/releases/download/${VERSION}"
+          RELEASES="https://github.com/LukasTechhelpSupport2907/Techhelp-Support-Browser/releases"
+
+          # Echte Dateinamen aus den heruntergeladenen Artefakten ermitteln
+          WIN_FILE=$(ls artifacts/*.exe      2>/dev/null | head -1 | sed 's|.*/||')
+          DMG_FILE=$(ls artifacts/*.dmg      2>/dev/null | head -1 | sed 's|.*/||')
+          APP_FILE=$(ls artifacts/*.AppImage 2>/dev/null | head -1 | sed 's|.*/||')
+          DEB_FILE=$(ls artifacts/*.deb      2>/dev/null | head -1 | sed 's|.*/||')
+
+          WIN_URL="${WIN_FILE:+${BASE}/${WIN_FILE}}"; WIN_URL="${WIN_URL:-$RELEASES}"
+          DMG_URL="${DMG_FILE:+${BASE}/${DMG_FILE}}"; DMG_URL="${DMG_URL:-$RELEASES}"
+          APP_URL="${APP_FILE:+${BASE}/${APP_FILE}}"; APP_URL="${APP_URL:-$RELEASES}"
+          DEB_URL="${DEB_FILE:+${BASE}/${DEB_FILE}}"; DEB_URL="${DEB_URL:-$RELEASES}"
+          APK_URL="${BASE}/app-debug.apk"
+
+          echo "Windows:  $WIN_URL"
+          echo "macOS:    $DMG_URL"
+          echo "Linux:    $APP_URL"
+          echo "Android:  $APK_URL"
+
+          printf '{"version":"%s","downloads":{"windows":"%s","macos":"%s","linux":"%s","linux_deb":"%s","android":"%s"},"releases_page":"%s","updated":"%s"}' \
+            "${VERSION}" "${WIN_URL}" "${DMG_URL}" "${APP_URL}" "${DEB_URL}" "${APK_URL}" "${RELEASES}" \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            > "$TMPDIR/version.json"
+          cat "$TMPDIR/version.json"
+
+          # Git push (nur Webseiten-Dateien + version.json — keine Binaries)
+          cd "$TMPDIR"
+          git init
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "deploy: Browser ${VERSION} ($(date -u '+%Y-%m-%d %H:%M UTC'))"
+          git push --force \
+            "https://LukasTechhelpSupport2907:${TOKEN}@github.com/LukasTechhelpSupport2907/browser.techhelp-support.de-webseiten-datein-.git" \
+            HEAD:main

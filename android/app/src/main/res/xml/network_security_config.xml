@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow all network traffic (für Browser-Funktionalität erforderlich) -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Erlaube alle Domains für den Browser -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">*</domain>
+    </domain-config>
+</network-security-config>
