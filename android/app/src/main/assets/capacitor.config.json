@@ -1,0 +1,36 @@
+{
+	"appId": "de.techhelpsupport.browser",
+	"appName": "TechHelp Browser",
+	"webDir": "www",
+	"server": {
+		"androidScheme": "https",
+		"cleartext": true,
+		"allowNavigation": [
+			"*"
+		]
+	},
+	"android": {
+		"minSdkVersion": 24,
+		"targetSdkVersion": 34,
+		"buildToolsVersion": "34.0.0",
+		"allowMixedContent": true,
+		"captureInput": true,
+		"webContentsDebuggingEnabled": true,
+		"backgroundColor": "#0e0e0e",
+		"useLegacyBridge": false
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 1500,
+			"backgroundColor": "#0e0e0e",
+			"showSpinner": false,
+			"androidSplashResourceName": "splash",
+			"splashFullScreen": true,
+			"splashImmersive": true
+		},
+		"Keyboard": {
+			"resize": "native",
+			"style": "dark"
+		}
+	}
+}
