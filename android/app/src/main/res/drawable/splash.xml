@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TechHelp Browser Splash Screen -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Hintergrund: TechHelp Dark -->
+    <item>
+        <color android:color="#0E0E0E" />
+    </item>
+
+    <!-- Zentriertes Logo -->
+    <item
+        android:width="120dp"
+        android:height="120dp"
+        android:gravity="center">
+        <shape android:shape="rectangle">
+            <corners android:radius="24dp" />
+            <solid android:color="#FF6363" />
+        </shape>
+    </item>
+
+    <!-- Blitz-Symbol (weißer Text über dem roten Kasten) -->
+    <item
+        android:width="60dp"
+        android:height="80dp"
+        android:gravity="center">
+        <shape android:shape="rectangle">
+            <!-- Blitz als vereinfachtes Polygon – wird via ic_launcher Icon dargestellt -->
+            <solid android:color="#FFFFFF" />
+        </shape>
+    </item>
+
+</layer-list>
