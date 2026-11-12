@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Hintergrund -->
+  <rect width="256" height="256" rx="48" fill="#0e0e0e"/>
+  <!-- Äußerer Ring -->
+  <circle cx="128" cy="128" r="96" fill="none" stroke="#ff6363" stroke-width="8" opacity="0.3"/>
+  <!-- Mittlerer Ring -->
+  <circle cx="128" cy="128" r="72" fill="none" stroke="#ff6363" stroke-width="4" opacity="0.5"/>
+  <!-- Blitz-Icon -->
+  <path d="M148 40 L92 136 H128 L108 216 L164 104 H128 Z"
+        fill="#ff6363"
+        stroke="#ff8888"
+        stroke-width="2"
+        stroke-linejoin="round"/>
+  <!-- Glow-Effekt -->
+  <path d="M148 40 L92 136 H128 L108 216 L164 104 H128 Z"
+        fill="url(#glow)" opacity="0.4"/>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ff6363" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+</svg>
