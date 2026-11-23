@@ -1,0 +1,8 @@
+{
+  "appId": "de.techhelpsupport.browser",
+  "appName": "TechHelp Browser",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
